@@ -1,0 +1,204 @@
+(venv) C:\Users\admin\Desktop\Medium.Com\M1\Poisson binomial\data-decoder-reproducible>python src\05_full_analysis.py
+======================================================================
+THE DATA DECODER: FULL REPRODUCIBLE ANALYSIS
+======================================================================
+Run started at: 2026-09-08 17:19:51
+
+
+======================================================================
+RUNNING: 01_frequency_distribution.py
+======================================================================
+============================================================
+FREQUENCY DISTRIBUTION OF EXAM SCORES
+============================================================
+Frequency Table
++--------------------+
+| Score (x)  | Frequency (f) |
++--------------------+
+|     4      |     1      |
+|     5      |     2      |
+|     6      |     3      |
+|     7      |     5      |
+|     8      |     4      |
+|     9      |     3      |
+|     10     |     2      |
++--------------------+
+| Total (N)  |     20     |
++--------------------+
+
+Mean score: 7.30
+Median score: 7.0
+Total students: 20
+
+Saved chart -> output/figures/frequency_distribution.png
+
+Visual inspection: The distribution shows a peak at score 7
+with frequencies climbing 1â†’2â†’3â†’5 and dropping 5â†’4â†’3â†’2.
+This is roughly bell-shaped (unimodal and roughly symmetric).
+
+
+
+======================================================================
+RUNNING: 02_normality_tests.py
+======================================================================
+======================================================================
+NORMALITY TESTS ON EXAM SCORES
+======================================================================
+Sample size (n): 20
+Raw scores: [4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10]
+
+1. SHAPIRO-WILK TEST
+--------------------------------------------------
+Shapiro-Wilk statistic (W): 0.9615
+p-value                    : 0.5750
+Verdict (alpha=0.05): Fail to reject H0 - no significant evidence against normality.
+Interpretation: The data is consistent with a normal distribution at alpha=0.05.
+
+2. NOTE ON KOLMOGOROV-SMIRNOV TEST
+--------------------------------------------------
+The Kolmogorov-Smirnov test is NOT recommended for this data because:
+1. It assumes continuous data (we have discrete scores with ties)
+2. It's less powerful than Shapiro-Wilk for small samples
+3. It can produce misleading p-values with tied data
+
+-> Shapiro-Wilk is the appropriate test for this dataset.
+
+Saved results -> output/reports/normality_test_results.txt
+
+
+
+======================================================================
+RUNNING: 03_poisson_binomial_ecommerce.py
+======================================================================
+======================================================================
+E-COMMERCE ANALYSIS: POISSON MEETS BINOMIAL
+======================================================================
+Average visitors/hour  : 150
+Conversion rate        : 2%
+Expected sales/hour    : 3.0
+Number of hours        : 500
+
+1. THE ZERO SALES PANIC
+--------------------------------------------------
+P(0 sales in ONE hour):
+  Exact Binomial    : 4.8296%
+  Poisson approx    : 4.9787%
+  ~1 in 20 hours (unlucky, but common)
+
+Consecutive zero-sales probabilities:
+  1 hour  : 4.9787%  (~1 in 20)
+  2 hours : 0.2479%  (~1 in 403)
+  3 hours : 0.0123%  (~1 in 8,103)
+  4 hours : 0.0006%  (~1 in 162,755)
+  5 hours : 0.0000%  (~1 in 3,269,017)
+
+P(at least one zero-sales hour in 24h): 70.6436%
+-> A single zero-sales hour is NOT a red flag; it's expected almost daily.
+
+P(3 consecutive zero-sales hours): 0.0123%
+-> This IS a genuine signal (about 1 in 8,100 three-hour sequences)
+
+2. EXACT SALES PROBABILITY (k=5)
+--------------------------------------------------
+P(exactly 5 sales in an hour):
+  Exact Binomial    : 10.1148%
+  Poisson approx    : 10.0819%
+  Difference        : 0.0330%
+
+-> Nearly identical! The approximation works well when n is large and p is small.
+
+3. GENERATING SIMULATED DATASET
+--------------------------------------------------
+Saved dataset -> data/ecommerce_poisson_binomial_dataset.csv
+Simulated average sales/hour: 3.00 (target: 3.0)
+
+4. GENERATING VISUALIZATIONS
+--------------------------------------------------
+Saved chart -> output/figures/poisson_binomial_comparison.png
+
+5. SUMMARY STATISTICS
+--------------------------------------------------
+Total hours simulated: 500
+Average visitors/hour: 149.3
+Average sales/hour: 3.00
+Conversion rate (observed): 2.0083%
+Zero-sales hours: 23 (4.6%)
+
+
+======================================================================
+RUNNING: 04_approximation_breakdown.py
+======================================================================
+<string>:100: SyntaxWarning: invalid escape sequence '\l'
+<string>:112: SyntaxWarning: invalid escape sequence '\l'
+======================================================================
+WHERE POISSON STOPS APPROXIMATING BINOMIAL WELL
+======================================================================
+
+Holding Î» = nÃ—p = 3 constant, but varying n and p:
+
+-----------------------------------------------------------------------------------------------
+Scenario                        n      p   lambda   Max |Binom-Poisson| gap   Worst k
+-----------------------------------------------------------------------------------------------
+Safe zone (article's case)    150   0.02      3.0                  0.2272%   k=3
+Borderline                     30   0.10      3.0                  1.2046%   k=3
+Violation begins               10   0.30      3.0                  4.2786%   k=3
+Severe violation (n=6, p=0.5)    6   0.50      3.0                  8.8458%   k=3
+
+======================================================================
+DETAILED BREAKDOWN: SEVERE VIOLATION CASE
+======================================================================
+n=6, p=0.50, Î»=3.0
+
+Comparing exact Binomial vs Poisson approximation:
+------------------------------------------------------------
+  k    Exact Binomial    Poisson approx    Difference
+------------------------------------------------------------
+  0           1.5625%           4.9787%      -3.4162%
+  1           9.3750%          14.9361%      -5.5611%
+  2          23.4375%          22.4042%      +1.0333%
+  3          31.2500%          22.4042%      +8.8458%
+  4          23.4375%          16.8031%      +6.6344%
+  5           9.3750%          10.0819%      -0.7069%
+  6           1.5625%           5.0409%      -3.4784%
+  7           0.0000%           2.1604%      -2.1604%
+------------------------------------------------------------
+Maximum gap: 8.8458% at k=3
+
+
+======================================================================
+WHY IT BREAKS: VARIANCE MISMATCH
+======================================================================
+Binomial variance  = n Ã— p Ã— (1-p)
+Poisson variance   = Î» = n Ã— p
+When p is small, (1-p) â‰ˆ 1, so variances match.
+When p grows large, (1-p) shrinks, variances diverge.
+
+Scenario                        Binomial Var     Poisson Var       Ratio
+---------------------------------------------------------------------------
+Safe zone (article's case)            2.9400          3.0000       0.980
+Borderline                            2.7000          3.0000       0.900
+Violation begins                      2.1000          3.0000       0.700
+Severe violation (n=6, p=0.5)          1.5000          3.0000       0.500
+
+â†’ The Binomial distribution has less variance than Poisson when p is not small.
+   This variance gap IS the mechanism behind the PMF differences above.
+
+GENERATING VISUALIZATION...
+--------------------------------------------------
+Saved chart -> output/figures/approximation_breakdown.png
+
+======================================================================
+GENERATING SUMMARY REPORT
+======================================================================
+Summary report saved to: output/reports/full_analysis_summary.txt
+
+======================================================================
+ANALYSIS COMPLETE!
+======================================================================
+Output files:
+  - Figures: output/figures/
+  - Reports: output/reports/
+  - Data: data/ecommerce_poisson_binomial_dataset.csv
+
+
+(venv) C:\Users\admin\Desktop\Medium.Com\M1\Poisson binomial\data-decoder-reproducible>
